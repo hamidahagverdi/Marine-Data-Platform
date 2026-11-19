@@ -4,4 +4,8 @@ name: marine
 nodes:
   - role: control-plane
   - role: worker
+    labels:
+      workload: ingestion
   - role: worker
+    labels:
+      workload: processing
