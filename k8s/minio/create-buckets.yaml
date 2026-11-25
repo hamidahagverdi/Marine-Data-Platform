@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-buckets
+  namespace: storage
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+        - name: mc-config
+          emptyDir: {}
+      initContainers:
+        - name: set-alias
+          image: cgr.dev/chainguard/minio-client:latest
+          args: ["--config-dir", "/config", "alias", "set", "local", "http://minio.storage:9000", "$(MINIO_ROOT_USER)", "$(MINIO_ROOT_PASSWORD)"]
+          envFrom:
+            - secretRef:
+                name: minio-credentials
+          volumeMounts:
+            - name: mc-config
+              mountPath: /config
+      containers:
+        - name: make-buckets
+          image: cgr.dev/chainguard/minio-client:latest
+          args: ["--config-dir", "/config", "mb", "--ignore-existing", "local/bronze", "local/silver", "local/gold"]
+          volumeMounts:
+            - name: mc-config
+              mountPath: /config

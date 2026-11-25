@@ -40,6 +40,12 @@ echo "==> 6. MinIO"
 kubectl apply -f k8s/minio/minio.yaml
 kubectl rollout status statefulset/minio -n storage --timeout=180s
 
+
+echo "==> 6b. MinIO bucket-ləri"
+kubectl delete job create-buckets -n storage --ignore-not-found
+kubectl apply -f k8s/minio/create-buckets.yaml
+kubectl wait --for=condition=complete job/create-buckets -n storage --timeout=180s
+
 echo "==> 7. helm yoxlanılır"
 if ! command -v helm >/dev/null 2>&1; then
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
