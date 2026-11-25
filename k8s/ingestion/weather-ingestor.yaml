@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weather-ingestor
+  namespace: ingestion
+spec:
+  schedule: "5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            workload: ingestion
+          containers:
+            - name: weather-ingestor
+              image: weather-ingestor:0.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KAFKA_BOOTSTRAP_SERVERS
+                  value: marine-kafka-kafka-bootstrap.kafka:9092
+                - name: KAFKA_TOPIC
+                  value: marine.weather
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
