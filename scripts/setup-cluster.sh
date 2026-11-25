@@ -65,8 +65,7 @@ kubectl wait kafka/marine-kafka -n kafka --for=condition=Ready --timeout=600s
 
 echo "==> 10. Kafka topic-ləri"
 kubectl apply -f k8s/kafka/topics.yaml
-echo ""
-echo "Hazırdır!"
+
 
 echo "==> 11. AIS ingestor image"
 if docker image inspect ais-ingestor:0.1 >/dev/null 2>&1; then
@@ -90,8 +89,28 @@ else
 fi
 kubectl apply -f k8s/ingestion/ais-ingestor.yaml
 kubectl rollout status deployment/ais-ingestor -n ingestion --timeout=120s
+
+
+
+echo "==> 13. Hava ingestor image və CronJob"
+if docker image inspect weather-ingestor:0.1 >/dev/null 2>&1; then
+  echo "Image artıq var"
+else
+  if [ ! -d ingestors/weather/wheels ]; then
+    pip download -r ingestors/weather/requirements.txt -d ingestors/weather/wheels \
+      --only-binary=:all: --python-version 3.12 --implementation cp \
+      --platform manylinux_2_28_x86_64 --platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64
+  fi
+  docker build -t weather-ingestor:0.1 ingestors/weather/
+fi
+kind load docker-image weather-ingestor:0.1 --name "$CLUSTER_NAME"
+kubectl apply -f k8s/ingestion/weather-ingestor.yaml
+
 kubectl get nodes -L workload
 kubectl get pods -n storage
 kubectl get pods -n kafka
 kubectl get kafkatopic -n kafka
 kubectl get pods -n ingestion
+kubectl get cronjob -n ingestion
+echo ""
+echo "Hazırdır!"
