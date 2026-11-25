@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ais-ingestor
+  namespace: ingestion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ais-ingestor
+  template:
+    metadata:
+      labels:
+        app: ais-ingestor
+    spec:
+      nodeSelector:
+        workload: ingestion
+      containers:
+        - name: ais-ingestor
+          image: ais-ingestor:0.1
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: aisstream-credentials
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: marine-kafka-kafka-bootstrap.kafka:9092
+            - name: KAFKA_TOPIC
+              value: ais.raw
+            - name: BOUNDING_BOX
+              value: "[[40.0, 26.0], [41.5, 30.0]]"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
