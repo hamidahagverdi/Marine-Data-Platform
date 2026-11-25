@@ -45,7 +45,20 @@ if ! command -v helm >/dev/null 2>&1; then
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
 helm version --short
+echo "==> 8. Strimzi operator"
+if helm status strimzi -n kafka >/dev/null 2>&1; then
+  echo "Strimzi artıq quraşdırılıb"
+else
+  helm install strimzi oci://quay.io/strimzi-helm/strimzi-kafka-operator -n kafka
+fi
+kubectl rollout status deployment/strimzi-cluster-operator -n kafka --timeout=300s
 
+echo "==> 9. Kafka cluster"
+kubectl apply -f k8s/kafka/kafka.yaml
+kubectl wait kafka/marine-kafka -n kafka --for=condition=Ready --timeout=600s
+
+echo "==> 10. Kafka topic-ləri"
+kubectl apply -f k8s/kafka/topics.yaml
 echo ""
 echo "Hazırdır!"
 kubectl get nodes -L workload
